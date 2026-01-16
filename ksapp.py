@@ -52,6 +52,7 @@ REDEEM_SCRIPT = os.path.join(BASE_DIR, "redeemer.py")
 CODES_FILE = os.path.join(BASE_DIR, "ks_codes.txt")
 LOG_FILE = os.path.join(BASE_DIR, "ks_bot.log")
 PLAYERS_CSV = os.path.join(BASE_DIR, "KSGC.csv")
+RESULTS_CSV = os.path.join(BASE_DIR, "results.csv")
 PYTHON_EXE = sys.executable
 
 # -----------------------------
@@ -75,6 +76,31 @@ def process_log_queue():
             terminal_box.see(tk.END)
     if not args.headless:
         root.after(100, process_log_queue)
+
+# -----------------------------
+# HISTORY MANAGEMENT
+# -----------------------------
+def clear_history():
+    if not args.headless:
+        if not messagebox.askyesno("Confirm", "This will clear all discovered codes and redemption results. The bot will try to redeem all active codes again. Continue?"):
+            return
+
+    try:
+        # Clear ks_codes.txt
+        if os.path.exists(CODES_FILE):
+            os.remove(CODES_FILE)
+        
+        # Clear results.csv
+        if os.path.exists(RESULTS_CSV):
+            os.remove(RESULTS_CSV)
+            
+        log("🗑️ History cleared (Codes and Results).")
+        if not args.headless:
+            messagebox.showinfo("Success", "Redemption history has been cleared.")
+    except Exception as e:
+        log(f"❌ Error clearing history: {e}")
+        if not args.headless:
+            messagebox.showerror("Error", f"Failed to clear history: {e}")
 
 # -----------------------------
 # PLAYER MANAGEMENT (CSV)
@@ -205,7 +231,7 @@ def run_redeemer(new_codes=None):
         update_status("Redeeming...")
         log("Running redeemer...")
 
-        command = [PYTHON_EXE, REDEEM_SCRIPT, ""]
+        command = [PYTHON_EXE, REDEEM_SCRIPT, ""] 
         if new_codes:
             command.extend(new_codes)
 
@@ -267,8 +293,9 @@ if args.headless:
 else:
     root = tk.Tk()
     root.title("KS Gift Code Manager")
-    root.geometry("600x500")
+    root.geometry("600x550")
 
+    # Status Info
     status_frame = tk.LabelFrame(root, text="Status Information", padx=10, pady=5)
     status_frame.pack(fill="x", padx=10, pady=5)
 
@@ -281,6 +308,7 @@ else:
     last_redeem_label = tk.Label(status_frame, text="Last Redeem: Never", anchor="w")
     last_redeem_label.pack(fill="x")
 
+    # Player Management Frame
     player_frame = tk.LabelFrame(root, text="Add New Player", padx=10, pady=5)
     player_frame.pack(fill="x", padx=10, pady=5)
 
@@ -290,6 +318,7 @@ else:
     
     tk.Button(player_frame, text="Add Player", command=lambda: add_player_to_csv(player_entry.get())).pack(side="left", padx=5)
 
+    # Control Buttons
     button_frame = tk.Frame(root)
     button_frame.pack(padx=10, pady=5)
 
@@ -299,6 +328,11 @@ else:
     tk.Button(button_frame, text="Redeem Codes Now", width=20,
               command=lambda: threading.Thread(target=run_redeemer, daemon=True).start()).grid(row=0, column=1, padx=5, pady=5)
 
+    # Clear History Button
+    tk.Button(root, text="Clear Redemption History", width=40, bg="#ff4d4d", fg="white",
+              command=clear_history).pack(padx=10, pady=5)
+
+    # Logs
     log_label = tk.Label(root, text="Activity Logs:", anchor="w")
     log_label.pack(fill="x", padx=10)
     
