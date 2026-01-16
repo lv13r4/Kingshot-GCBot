@@ -8,7 +8,15 @@ echo.
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo [ERROR] Python is not installed! 
-    echo Please install Python from python.org and try again.
+    echo.
+    echo Opening the official Python download page for you...
+    start https://www.python.org/downloads/
+    echo.
+    echo PLEASE: 
+    echo 1. Download and run the Python installer.
+    echo 2. IMPORTANT: Check the box "Add Python to PATH" during installation!
+    echo 3. After installation, run this script again.
+    echo.
     pause
     exit /b
 )
@@ -25,6 +33,6 @@ venv\Scripts\playwright install chromium
 echo.
 echo ===========================================
 echo    Setup Complete! 
-echo    Now you can use 'run.bat' to start the bot.
+echo    Now you can use 'RUN_ON_WINDOWS.bat'
 echo ===========================================
 pause
