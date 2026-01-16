@@ -1,0 +1,7 @@
+{
+    "DISCORD_WEBHOOK": "YOUR_WEBHOOK_URL_HERE",
+    "MONITOR_TOKEN": "YOUR_DISCORD_BOT_TOKEN_HERE",
+    "MONITOR_CHANNEL_ID": 0,
+    "CHECK_INTERVAL": 3600,
+    "TARGET_URL": "https://kingshot.net/gift-codes"
+}
