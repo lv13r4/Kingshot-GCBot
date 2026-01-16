@@ -1,6 +1,6 @@
 # Private Config
 config.json
-KSGC.xlsx
+KSGC.csv
 
 # Logs and Data
 *.log

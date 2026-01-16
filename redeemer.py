@@ -3,17 +3,16 @@ import sys
 import time
 import json
 import asyncio
-import pandas as pd
+import csv
 from datetime import datetime
 from playwright.async_api import async_playwright
 import requests
-import openpyxl
 
 # -----------------------------
 # PATHS
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PLAYERS_XLSX = os.path.join(BASE_DIR, 'KSGC.xlsx')
+PLAYERS_CSV = os.path.join(BASE_DIR, 'KSGC.csv')
 CODES_FILE = os.path.join(BASE_DIR, 'ks_codes.txt')
 RESULTS_CSV = os.path.join(BASE_DIR, 'results.csv')
 LOCK_FILE = os.path.join(BASE_DIR, 'redeem.lock')
@@ -38,10 +37,11 @@ def remove_lock():
 # -----------------------------
 def load_players():
     try:
-        if not os.path.exists(PLAYERS_XLSX):
+        if not os.path.exists(PLAYERS_CSV):
             return []
-        df = pd.read_excel(PLAYERS_XLSX, header=None)
-        return df[0].astype(str).str.strip().tolist()
+        with open(PLAYERS_CSV, 'r', newline='') as f:
+            reader = csv.reader(f)
+            return [row[0].strip() for row in reader if row]
     except Exception as e:
         print(f"❌ Error loading players: {e}")
         return []
@@ -57,14 +57,15 @@ def load_results():
     if not os.path.exists(RESULTS_CSV):
         return results
     try:
-        df = pd.read_csv(RESULTS_CSV)
-        for _, row in df.iterrows():
-            p_id = str(row['PlayerID'])
-            code = str(row['GiftCode'])
-            status = str(row['Status'])
-            if p_id not in results:
-                results[p_id] = {}
-            results[p_id][code] = status
+        with open(RESULTS_CSV, 'r', newline='') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                p_id = row['PlayerID']
+                code = row['GiftCode']
+                status = row['Status']
+                if p_id not in results:
+                    results[p_id] = {}
+                results[p_id][code] = status
     except:
         pass
     return results
@@ -72,8 +73,11 @@ def load_results():
 def save_result_line(player, code, status):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     file_exists = os.path.exists(RESULTS_CSV)
-    df = pd.DataFrame([[player, code, status, ts]], columns=['PlayerID', 'GiftCode', 'Status', 'Timestamp'])
-    df.to_csv(RESULTS_CSV, mode='a', header=not file_exists, index=False)
+    with open(RESULTS_CSV, 'a', newline='') as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(['PlayerID', 'GiftCode', 'Status', 'Timestamp'])
+        writer.writerow([player, code, status, ts])
 
 def save_codes(codes):
     with open(CODES_FILE, 'w') as f:
@@ -111,7 +115,6 @@ async def run_redeemer(webhook, new_codes_from_args=None):
             return
 
         async with async_playwright() as p:
-            # Launch browser (bundled or system)
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context()
             page = await context.new_page()
@@ -128,7 +131,6 @@ async def run_redeemer(webhook, new_codes_from_args=None):
                     continue
 
                 try:
-                    # Login
                     await page.wait_for_selector('input[placeholder="Player ID"]', timeout=15000)
                     await page.fill('input[placeholder="Player ID"]', player_id)
                     await page.click('.btn.login_btn')
@@ -154,7 +156,6 @@ async def run_redeemer(webhook, new_codes_from_args=None):
                         except:
                             pass
 
-                        # Close popups
                         try:
                             await page.click('.swal2-confirm', timeout=500)
                         except:
@@ -176,7 +177,6 @@ async def run_redeemer(webhook, new_codes_from_args=None):
 
             await browser.close()
 
-        # Check for newly completed codes
         newly_completed = []
         for code in attempted_codes:
             is_done = all(results.get(p, {}).get(code) in ['Successful', 'Already claimed'] for p in players)

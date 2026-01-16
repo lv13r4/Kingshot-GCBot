@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime
 import queue
-import openpyxl
+import csv
 import re
 import json
 import argparse
@@ -51,7 +51,7 @@ TARGET_URL = config["TARGET_URL"]
 REDEEM_SCRIPT = os.path.join(BASE_DIR, "redeemer.py")
 CODES_FILE = os.path.join(BASE_DIR, "ks_codes.txt")
 LOG_FILE = os.path.join(BASE_DIR, "ks_bot.log")
-EXCEL_FILE = os.path.join(BASE_DIR, "KSGC.xlsx")
+PLAYERS_CSV = os.path.join(BASE_DIR, "KSGC.csv")
 PYTHON_EXE = sys.executable
 
 # -----------------------------
@@ -77,32 +77,30 @@ def process_log_queue():
         root.after(100, process_log_queue)
 
 # -----------------------------
-# PLAYER MANAGEMENT
+# PLAYER MANAGEMENT (CSV)
 # -----------------------------
-def add_player_to_excel(player_id):
+def add_player_to_csv(player_id):
     player_id = player_id.strip()
     if not player_id:
         if not args.headless: messagebox.showwarning("Warning", "Please enter a Player ID.")
         return False
     
     try:
-        if os.path.exists(EXCEL_FILE):
-            workbook = openpyxl.load_workbook(EXCEL_FILE)
-            sheet = workbook.active
-        else:
-            workbook = openpyxl.Workbook()
-            sheet = workbook.active
-            sheet.title = "Players"
+        existing_ids = []
+        if os.path.exists(PLAYERS_CSV):
+            with open(PLAYERS_CSV, 'r', newline='') as f:
+                reader = csv.reader(f)
+                existing_ids = [row[0] for row in reader if row]
 
-        # Check for duplicate
-        for row in sheet.iter_rows(min_row=1, max_col=1, values_only=True):
-            if row[0] and str(row[0]).strip() == player_id:
-                log(f"⚠️ Duplicate: Player ID {player_id} already exists.")
-                if not args.headless: messagebox.showinfo("Info", f"Player ID {player_id} already in list.")
-                return False
+        if player_id in existing_ids:
+            log(f"⚠️ Duplicate: Player ID {player_id} already exists.")
+            if not args.headless: messagebox.showinfo("Info", f"Player ID {player_id} already in list.")
+            return False
 
-        sheet.append([player_id])
-        workbook.save(EXCEL_FILE)
+        with open(PLAYERS_CSV, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([player_id])
+            
         log(f"✅ Added Player ID: {player_id}")
         if not args.headless: 
             player_entry.delete(0, tk.END)
@@ -110,7 +108,7 @@ def add_player_to_excel(player_id):
         return True
 
     except Exception as e:
-        log(f"❌ Excel Error: {e}")
+        log(f"❌ CSV Error: {e}")
         if not args.headless: messagebox.showerror("Error", f"Failed to save player: {e}")
         return False
 
@@ -207,8 +205,7 @@ def run_redeemer(new_codes=None):
         update_status("Redeeming...")
         log("Running redeemer...")
 
-        # No webhook URL passed in standalone mode
-        command = [PYTHON_EXE, REDEEM_SCRIPT, ""] 
+        command = [PYTHON_EXE, REDEEM_SCRIPT, ""]
         if new_codes:
             command.extend(new_codes)
 
@@ -272,7 +269,6 @@ else:
     root.title("KS Gift Code Manager")
     root.geometry("600x500")
 
-    # Status Info
     status_frame = tk.LabelFrame(root, text="Status Information", padx=10, pady=5)
     status_frame.pack(fill="x", padx=10, pady=5)
 
@@ -285,7 +281,6 @@ else:
     last_redeem_label = tk.Label(status_frame, text="Last Redeem: Never", anchor="w")
     last_redeem_label.pack(fill="x")
 
-    # Player Management Frame
     player_frame = tk.LabelFrame(root, text="Add New Player", padx=10, pady=5)
     player_frame.pack(fill="x", padx=10, pady=5)
 
@@ -293,9 +288,8 @@ else:
     player_entry = tk.Entry(player_frame, width=20)
     player_entry.pack(side="left", padx=5)
     
-    tk.Button(player_frame, text="Add Player", command=lambda: add_player_to_excel(player_entry.get())).pack(side="left", padx=5)
+    tk.Button(player_frame, text="Add Player", command=lambda: add_player_to_csv(player_entry.get())).pack(side="left", padx=5)
 
-    # Control Buttons
     button_frame = tk.Frame(root)
     button_frame.pack(padx=10, pady=5)
 
@@ -305,7 +299,6 @@ else:
     tk.Button(button_frame, text="Redeem Codes Now", width=20,
               command=lambda: threading.Thread(target=run_redeemer, daemon=True).start()).grid(row=0, column=1, padx=5, pady=5)
 
-    # Logs
     log_label = tk.Label(root, text="Activity Logs:", anchor="w")
     log_label.pack(fill="x", padx=10)
     
