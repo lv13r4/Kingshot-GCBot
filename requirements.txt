@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+discord.py
+openpyxl
+playwright
+pandas
+openpyxl

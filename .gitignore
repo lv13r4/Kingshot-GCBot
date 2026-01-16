@@ -1,0 +1,21 @@
+# Private Config
+config.json
+KSGC.xlsx
+
+# Logs and Data
+*.log
+ks_codes.txt
+results.csv
+redeem.lock
+error.png
+error.html
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Executables
+dist/
+build/
+*.spec
