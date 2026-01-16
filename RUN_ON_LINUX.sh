@@ -1,8 +1,8 @@
 #!/bin/bash
 if [ ! -d "venv" ]; then
     echo "Setup not found. Running setup..."
-    chmod +x setup_pi.sh
-    ./setup_pi.sh
+    chmod +x INSTALL_ON_LINUX.sh
+    ./INSTALL_ON_LINUX.sh
 fi
 
 echo "Starting KS Bot..."

@@ -82,24 +82,23 @@ def process_log_queue():
 # -----------------------------
 def create_desktop_shortcut():
     try:
-        if sys.platform == "win32":
-            shortcut_path = os.path.join(os.path.expanduser("~"), "Desktop", "KS Gift Code Bot.lnk")
-            target = os.path.join(BASE_DIR, "run.bat")
-            icon = sys.executable # Use Python icon
-            
-            powershell_cmd = (
-                f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{shortcut_path}');" 
-                f"$s.TargetPath='{target}';" 
-                f"$s.WorkingDirectory='{BASE_DIR}';" 
-                f"$s.Save()"
-            )
-            subprocess.run(["powershell", "-Command", powershell_cmd], check=True)
-            
-        else: # Linux
-            desktop_path = os.path.expanduser("~/Desktop/ksbot.desktop")
-            run_script = os.path.join(BASE_DIR, "run.sh")
-            
-            content = f"[Desktop Entry]\nName=KS Gift Code Bot\nExec={run_script}\nIcon=utilities-terminal\nType=Application\nTerminal=false\nCategories=Utility;\n"
+                if sys.platform == "win32":
+                    shortcut_path = os.path.join(os.path.expanduser("~"), "Desktop", "KS Gift Code Bot.lnk")
+                    target = os.path.join(BASE_DIR, "RUN_ON_WINDOWS.bat")
+                    icon = sys.executable # Use Python icon
+                    
+                    powershell_cmd = (
+                        f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{shortcut_path}');"
+                        f"$s.TargetPath='{target}';"
+                        f"$s.WorkingDirectory='{BASE_DIR}';"
+                        f"$s.Save()"
+                    )
+                    subprocess.run(["powershell", "-Command", powershell_cmd], check=True)
+                    
+                else: # Linux
+                    desktop_path = os.path.expanduser("~/Desktop/ksbot.desktop")
+                    run_script = os.path.join(BASE_DIR, "RUN_ON_LINUX.sh")
+                    content = f"[Desktop Entry]\nName=KS Gift Code Bot\nExec={run_script}\nIcon=utilities-terminal\nType=Application\nTerminal=false\nCategories=Utility;\n"
             with open(desktop_path, "w") as f:
                 f.write(content)
             os.chmod(desktop_path, 0o755)
